@@ -1,0 +1,19 @@
+/ip firewall address-list
+add address=202.150.158.158 list=allow-access-router
+add address=202.150.128.42 list=allow-access-router
+/ip firewall filter
+add action=fasttrack-connection chain=forward comment=fast-track connection-state=established,related
+add action=accept chain=forward comment=allow-established-related-connection connection-state=established,related
+add action=drop chain=forward comment=drop-invalid-connection connection-state=invalid log=yes log-prefix=invalid
+add action=accept chain=input comment=allow-connection-to-router src-address-list=allow-access-router
+add action=accept chain=input comment=allow-icmp protocol=icmp
+add action=drop chain=input comment=block-input-to-router
+add action=accept chain=forward comment=allow-ftp-ssh-telnet-from-specific-address dst-port=21-23 protocol=tcp src-address-list=allow-ftp-ssh-telnet
+add action=accept chain=forward dst-address-list=allow-ftp-ssh-telnet dst-port=21-23 protocol=tcp
+add action=drop chain=forward comment=block-bruteforce dst-port=21-23 protocol=tcp
+add action=drop chain=forward comment=block-smtp-spammers connection-limit=30,32 dst-port=25 limit=50,5:packet protocol=tcp
+add action=accept chain=forward
+add action=drop chain=forward comment=block-virus-ransomware dst-port=135-139,445,2214,3389,5678,7533,20004 protocol=udp
+add action=drop chain=forward dst-port=135-139,445,2214,3389,5678,7533,20004 protocol=tcp
+add action=drop chain=forward comment=block-scanning protocol=tcp psd=21,3s,3,1
+add action=drop chain=forward protocol=udp psd=21,3s,3,1
