@@ -1,9 +1,6 @@
 /interface list
 add name=allow-mac-scan
 
-/ip dhcp-server
-add address-pool=dhcp_pool1 disabled=no interface=ether5 name=dhcp1
-
 /snmp community
 set [ find default=yes ] addresses=202.150.128.0/19 name=comtronics
 
@@ -13,16 +10,6 @@ set discover-interface-list=allow-mac-scan
 /interface list member
 add interface=ether1 list=allow-mac-scan
 add interface=ether2 list=allow-mac-scan
-
-/ip address
-add address=192.168.77.1/24 interface=ether5 network=192.168.77.0
-add address=192.168.33.1/24 interface=bridge network=192.168.33.0
-
-/ip cloud
-set update-time=no
-
-/ip dhcp-server network
-add address=192.168.77.0/24 gateway=192.168.77.1
 
 /ip dns
 set servers=202.150.128.65,202.150.129.65
