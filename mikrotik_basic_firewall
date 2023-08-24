@@ -1,6 +1,36 @@
+/interface list
+add name=allow-mac-scan
+
+/ip dhcp-server
+add address-pool=dhcp_pool1 disabled=no interface=ether5 name=dhcp1
+
+/snmp community
+set [ find default=yes ] addresses=202.150.128.0/19 name=comtronics
+
+/ip neighbor discovery-settings
+set discover-interface-list=allow-mac-scan
+
+/interface list member
+add interface=ether1 list=allow-mac-scan
+add interface=ether2 list=allow-mac-scan
+
+/ip address
+add address=192.168.77.1/24 interface=ether5 network=192.168.77.0
+add address=192.168.33.1/24 interface=bridge network=192.168.33.0
+
+/ip cloud
+set update-time=no
+
+/ip dhcp-server network
+add address=192.168.77.0/24 gateway=192.168.77.1
+
+/ip dns
+set servers=202.150.128.65,202.150.129.65
+
 /ip firewall address-list
 add address=202.150.158.158 list=allow-access-router
 add address=202.150.128.42 list=allow-access-router
+
 /ip firewall filter
 add action=fasttrack-connection chain=forward comment=fast-track connection-state=established,related
 add action=accept chain=forward comment=allow-established-related-connection connection-state=established,related
@@ -17,3 +47,68 @@ add action=drop chain=forward comment=block-virus-ransomware dst-port=135-139,44
 add action=drop chain=forward dst-port=135-139,445,2214,3389,5678,7533,20004 protocol=tcp
 add action=drop chain=forward comment=block-scanning protocol=tcp psd=21,3s,3,1
 add action=drop chain=forward protocol=udp psd=21,3s,3,1
+
+/ip service
+set ftp disabled=yes
+set www disabled=yes
+set ssh port=19882
+set api disabled=yes
+set winbox address=202.150.158.158/32,202.150.128.42/32 port=24434
+set api-ssl disabled=yes
+
+/snmp
+set contact=noc@com.net.id enabled=yes location=lokasi-pelanggan trap-version=2
+
+/system scheduler
+add interval=2w name=comtronics-autobackup on-event=comtronics-autobackup policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon start-date=apr/01/2020 start-time=04:00:00
+
+/system script
+add dont-require-permissions=no name=comtronics-autobackup owner=cmxsys policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon source="# Automated backup to external FTP Server\r\
+    \n\r\
+    \n# FTP configuration\r\
+    \n:local ftphost \"202.150.151.14\"\r\
+    \n:local ftpuser \"comnetbackup\"\r\
+    \n:local ftppassword \"comnet5758!\"\r\
+    \n:local ftppath \"/comnetbackup/mikrotik/customers\"\r\
+    \n\r\
+    \n# Months array\r\
+    \n:local months (\"jan\",\"feb\",\"mar\",\"apr\",\"may\",\"jun\",\"jul\",\"aug\",\"sep\",\"oct\",\"nov\",\"dec\");\r\
+    \n\r\
+    \n# Get Date\r\
+    \n:local ds [/system clock get date]\r\
+    \n# set \$ds to format DD-MM-YYYY\r\
+    \n:set ds ([:pick \$ds 4 6].[:pick \$ds 0 3].[:pick \$ds 7 11])\r\
+    \n\r\
+    \n# file name for system backup - file name will be date-time-backup-servername.backup\r\
+    \n:local fname1 (\"/backup-\".\$ds.\"-\".[/system identity get name].\".backup\")\r\
+    \n# file name for config export - file name will be date-time-backup-servername.rsc\r\
+    \n:local fname2 (\"/backup-\".\$ds.\"-\".[/system identity get name].\".rsc\")\r\
+    \n\r\
+    \n# Backup the data\r\
+    \n:log info message=\"+++++++++++++++++++++++++++++++++++++++++++++++++++++\";\r\
+    \n:log info message=\"===> Generating backup now begin\";\r\
+    \n/system backup save name=\$fname1\r\
+    \n:log info message=\"===> Generate system backup finished\";\r\
+    \n/export compact file=\$fname2\r\
+    \n:log info message=\"===> Generate export file finished\";\r\
+    \n\r\
+    \n# Upload the system backup\r\
+    \n:log info message=\"===> Uploading system backup\"\r\
+    \n/tool fetch address=\"\$ftphost\" src-path=\$fname1 user=\"\$ftpuser\" mode=ftp password=\"\$ftppassword\" dst-path=\"\$ftppath/\$fname1\" upload=yes\r\
+    \n# Upload the config export\r\
+    \n:log info message=\"===> Uploading export file\"\r\
+    \n/tool fetch address=\"\$ftphost\" src-path=\$fname2 user=\"\$ftpuser\" mode=ftp password=\"\$ftppassword\" dst-path=\"\$ftppath/\$fname2\" upload=yes\r\
+    \n\r\
+    \n# Delay time to finish the upload - increase it if your backup file is big\r\
+    \n:delay 60s;\r\
+    \n# Find file name start with backup- then remove\r\
+    \n:foreach i in=[/file find] do={ :if ([:typeof [:find [/file get \$i name] \"backup-\"]]!=\"nil\") do={/file remove \$i}; }\r\
+    \n:log info message=\"===> The backup configuration is complete and successfully uploaded to the ftp server\";\r\
+    \n:log info message=\"+++++++++++++++++++++++++++++++++++++++++++++++++++++\";\r\
+    \n"
+
+/tool graphing interface
+add
+
+/tool graphing resource
+add
